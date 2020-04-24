@@ -135,13 +135,26 @@ public interface Graph {
         IntSupplier vertexGenerator = () -> (int) (Math.random() * (n));
         IntSupplier weightGenerator = () -> (int) (Math.random() * (maxWeight + 1));
         while (g.numberOfEdges() < nbEdges) {
-            int i, j;
+            int i, j, weight;
             do {
                 i = vertexGenerator.getAsInt();
                 j = vertexGenerator.getAsInt();
-            } while (g.isEdge(i, j));
-            System.out.println("Adding edge : " + i + " " + j);
-            g.addEdge(i, j, weightGenerator.getAsInt());
+            } while (g.isEdge(i, j) );
+            do {
+                weight = weightGenerator.getAsInt();
+            } while (weight == 0);
+            System.out.println("Adding edge : " + i + " -> " + j + " : " + weight);
+            g.addEdge(i, j, weight);
+        }
+        return g;
+    }
+
+    default Graph transpose() {
+        var g = new MatGraph(numberOfVertices());
+        for (int i = 0 ; i < numberOfVertices() ; ++i) {
+            forEachEdge(i, e -> {
+                g.addEdge(e.getEnd(), e.getStart(), e.getValue());
+            });
         }
         return g;
     }
