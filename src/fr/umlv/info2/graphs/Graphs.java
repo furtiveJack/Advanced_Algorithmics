@@ -110,7 +110,7 @@ public class Graphs {
 
     public static int[][] timedDepthFirstSearch(Graph g, int v0) {
         int n = g.numberOfVertices();
-        if (v0 > n) {
+        if (v0 > n || v0 < 0) {
             throw new IllegalArgumentException("Incorrect value for starting vertex");
         }
         LongAdder count = new LongAdder();
@@ -160,6 +160,12 @@ public class Graphs {
         list.push(v0);
     }
 
+    /**
+     * Compute a topological sort for the grpah given.
+     * @param g : a valid graph
+     * @param cycleDetect : if set to True, cycles will be treat as errors, otherwise they will be ignore.
+     * @return a list representing the topological sort of this graph
+     */
     public static List<Integer> topologicalSort(Graph g, boolean cycleDetect) {
         int n = g.numberOfVertices();
         var visited = new boolean[n];
@@ -173,10 +179,63 @@ public class Graphs {
         return list;
     }
 
+
+    /**
+     * Do a timedDFS on the graph from the vertex given, but instead of storing the beginning/end time for each vertice,
+     * we push the vertices into a stack by decreasing end date order.
+     * @param g : graph to work on
+     * @param v0 : current index
+     * @param visited : an array to know which vertex has already been visited
+     * @param stack : the stack that store the vertices by decreasing end time order
+     */
+    private static void fillStackByDecreasingOrder(Graph g, int v0, boolean[] visited, Stack<Integer> stack) {
+        visited[v0] = true;
+        g.forEachEdge(v0, e -> {
+            var t = e.getEnd();
+            if (! visited[t]) {
+                fillStackByDecreasingOrder(g, t, visited, stack);
+            }
+        });
+        stack.push(v0);
+    }
+
+    /**
+     * Compute the strongly connected components of the graph g.
+     * @param g : a valid graph
+     * @return a list of the connected components of the graph
+     */
+    public static List<List<Integer>> scc(Graph g) {
+        var n = g.numberOfVertices();
+        var visited = new boolean[n];
+        var decreasingEnds = new Stack<Integer>();
+        for (int i = 0 ; i < n ; ++i) {
+            fillStackByDecreasingOrder(g, i, visited, decreasingEnds);
+        }
+        var transposed = g.transpose();
+        visited = new boolean[n];
+        List<List<Integer>> result = new ArrayList<>();
+        while (! decreasingEnds.empty()) {
+            var v = decreasingEnds.pop();
+            if (! visited[v]) {
+                List<Integer> tmp = new ArrayList<>();
+                DFS_forVertex(transposed, v, visited, tmp);
+                result.add(tmp);
+            }
+        }
+        return result;
+    }
+
     public static void main(String[] args) throws IOException {
         var mat = Graph.loadGraph("src/matrix.mat", "list");
-        var topoSort = topologicalSort(mat, true);
-        System.out.println(topoSort);
+        var scc = scc(mat);
+        scc.forEach(System.out::println);
+
+
+
+
+//        var mat = Graph.loadGraph("src/matrix.mat", "list");
+//        var topoSort = topologicalSort(mat, true);
+//        System.out.println(topoSort);
 //        var timings = timedDepthFirstSearch(mat, 0);
 //        for (var a : timings) {
 //            System.out.println(Arrays.toString(a));
