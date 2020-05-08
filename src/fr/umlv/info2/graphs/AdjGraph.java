@@ -3,7 +3,6 @@ package fr.umlv.info2.graphs;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
-import java.util.NoSuchElementException;
 import java.util.function.Consumer;
 
 public class AdjGraph implements Graph {
