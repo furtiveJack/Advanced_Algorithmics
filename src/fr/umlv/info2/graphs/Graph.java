@@ -53,7 +53,7 @@ public interface Graph {
                 g = new AdjGraph(n);
             }
             else {
-                throw new IllegalArgumentException("Graph type should matrix or list");
+                throw new IllegalArgumentException("Graph type should be matrix or list");
             }
             int i = 0;
             line = reader.readLine();
