@@ -3,6 +3,7 @@ package fr.umlv.info2.graphs;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.function.Consumer;
 
 public class Graphs {
     /**
@@ -161,7 +162,7 @@ public class Graphs {
     }
 
     /**
-     * Compute a topological sort for the grpah given.
+     * Compute a topological sort for the graph given.
      * @param g : a valid graph
      * @param cycleDetect : if set to True, cycles will be treat as errors, otherwise they will be ignore.
      * @return a list representing the topological sort of this graph
@@ -181,12 +182,13 @@ public class Graphs {
 
 
     /**
-     * Do a timedDFS on the graph from the vertex given, but instead of storing the beginning/end time for each vertice,
+     * Do a timedDFS on the graph from the vertex given, but instead of storing the beginning/end time for each vertices,
      * we push the vertices into a stack by decreasing end date order.
-     * @param g : graph to work on
+     * This method is called for each vertex of the graph in order to compute the final stack.
+     * @param g : a valid graph
      * @param v0 : current index
      * @param visited : an array to know which vertex has already been visited
-     * @param stack : the stack that store the vertices by decreasing end time order
+     * @param stack : the stack that will store the vertices by decreasing end time order
      */
     private static void fillStackByDecreasingOrder(Graph g, int v0, boolean[] visited, Stack<Integer> stack) {
         visited[v0] = true;
@@ -225,10 +227,210 @@ public class Graphs {
         return result;
     }
 
+    /**
+     * Compute the shortest path from the starting vertex v0 to any other vertex of the graph, using
+     * the Bellman-Ford algorithm. This method detects if the graph contains negatives cycles.
+     * @param g : a valid graph
+     * @param v0 : starting vertex of the graph
+     * @return an ShortestPathFromOneVertex object storing  an array of distances and an array of predecessors.
+     * @throws IllegalStateException if the graph contains negative cycles.
+     * @throws IndexOutOfBoundsException if the given starting vertex is < 0 or >= g.numberOfVertices().
+     */
+    public static ShortestPathFromOneVertex bellmanFord(Graph g, int v0) {
+        int V = g.numberOfVertices();
+        if (v0 > V) {
+            throw new IndexOutOfBoundsException("Index of starting vertex is out of bounds");
+        }
+        int[] d = new int[V];
+        int[] p = new int[V];
+        // Initialization
+        for (int i = 0; i < V; ++i) {
+            d[i] = Integer.MAX_VALUE;
+            p[i] = Integer.MIN_VALUE;
+        }
+        d[v0] = 0;
+        p[v0] = v0;
+        // Main loop
+        for (int i = 1; i < V; ++i) {
+            for (int j = 0; j < V ; ++j) {
+                g.forEachEdge(j, edge -> {
+                    int s = edge.getStart();
+                    int t = edge.getEnd();
+                    int w = edge.getValue();
+                    if (d[s] != Integer.MAX_VALUE && (d[s] + w) < d[t]) {
+                        d[t] = d[s] + w;
+                        p[t] = s;
+                    }
+                });
+            }
+        }
+        // check for negative cycles
+        for (int i = 0 ; i < V ; ++i) {
+            g.forEachEdge(i, edge -> {
+                int s = edge.getStart();
+                int t = edge.getEnd();
+                int w = edge.getValue();
+                if (d[s] != Integer.MAX_VALUE && d[t] > d[s] + w) {
+                    throw new IllegalStateException("Graph contains a negative cycle");
+                }
+            });
+        }
+        return new ShortestPathFromOneVertex(v0, d, p);
+    }
+
+    /**
+     * Extract from todo the next vertex that minimizes the array d
+     * @param d : an array containing the distances from a starting vertex
+     * @param todo : an array telling which vertex can still be extracted
+     * @return the index of the vertex that minimizes the distance
+     * @throws IllegalStateException if there is no more vertex to extract in the todo array.
+     */
+    private static int extractMinDistanceVertex(int[] d, boolean[] todo) {
+        int n = d.length;
+        int minDistance = Integer.MAX_VALUE;
+        int min = -1; // index of vertex that minimizes d
+        for (int i = 0 ; i < n ; ++i) {
+            if (todo[i] && d[i] < minDistance) {
+                min = i;
+                minDistance = d[i];
+            }
+        }
+        if (min == -1) {
+            throw new IllegalStateException("No more vertex to extract");
+        }
+        todo[min] = false;
+        return min;
+    }
+
+    /**
+     * Compute the shortest path from the starting vertex v0 to any other vertex of the graph, using
+     * the Dijkstra algorithm.
+     * @param g : a valid graph
+     * @param v0 : starting vertex of the graph
+     * @return an ShortestPathFromOneVertex object storing  an array of distances and an array of predecessors.
+     * @throws IndexOutOfBoundsException if the given starting vertex is < 0 or >= g.numberOfVertices()
+     */
+    public static ShortestPathFromOneVertex dijkstra(Graph g, int v0) {
+        int V = g.numberOfVertices();
+        if (v0 > V) {
+            throw new IndexOutOfBoundsException("Index of starting vertex is out of bounds");
+        }
+        int[] d = new int[V];
+        int[] p = new int[V];
+        boolean[] todo = new boolean[V];
+        for (var i = 0 ; i < V ; ++i) {
+            d[i] = Integer.MAX_VALUE;
+            p[i] = Integer.MIN_VALUE;
+            todo[i] = true;
+        }
+        d[v0] = 0;
+        p[v0] = v0;
+        while (true) {
+            int s;
+            try {
+                s = extractMinDistanceVertex(d, todo);
+            } catch (IllegalStateException e) {
+                break; // no more vertex to extract
+            }
+            g.forEachEdge(s, edge -> {
+                int t = edge.getEnd();
+                int w = edge.getValue();
+                if (d[s] != Integer.MAX_VALUE && d[s] + w < d[t]) {
+                    d[t] = d[s] + w;
+                    p[t] = s;
+                }
+            });
+        }
+        return new ShortestPathFromOneVertex(v0, d, p);
+    }
+
+    private static void print2dArrays(int[][] d, int[][] p) {
+        StringBuffer bf = new StringBuffer();
+        for (int i = 0; i < d.length; i++) {
+            bf.append(Arrays.toString(d[i])).append("\t\t\t\t").append(Arrays.toString(p[i])).append("\n");
+        }
+        System.out.println(bf.toString());
+    }
+    public static ShortestPathFromAllVertices floydWarshall(Graph g) {
+        Objects.requireNonNull(g);
+        int V = g.numberOfVertices();
+        int[][] d = new int[V][V];
+        int[][] p = new int[V][V];
+        // Initialization
+        for (int s = 0 ; s < V ; ++s) {
+            for (int t = 0 ; t < V ; ++t) {
+                if (s == t) {
+                    d[s][t] = 0;
+                    p[s][t] = s;
+                }
+                else {
+                    if (g.isEdge(s, t)) {
+                        d[s][t] = g.getWeight(s, t);
+                        p[s][t] = s;
+                    }
+                    else {
+                        d[s][t] = Integer.MAX_VALUE;
+                        p[s][t] = Integer.MIN_VALUE;
+                    }
+                }
+            }
+        }
+//        print2dArrays(d, p);
+        // Main loop
+        for (int k = 0 ; k < V ; ++k) {
+//            System.out.println(" k:" + k);
+//            print2dArrays(d, p);
+            for (int s = 0 ; s < V ; ++s) {
+                for (int t = 0 ; t < V ; ++t) {
+                    if (s != k && t != k && d[s][k] != Integer.MAX_VALUE && d[k][t] != Integer.MAX_VALUE) {
+                        if (d[s][t] > d[s][k] + d[k][t]) {
+                            d[s][t] = d[s][k] + d[k][t];
+                            p[s][t] = p[k][t];
+                        }
+                    }
+                }
+            }
+        }
+        return new ShortestPathFromAllVertices(d, p);
+    }
+
+
     public static void main(String[] args) throws IOException {
-        var mat = Graph.loadGraph("src/matrix.mat", "list");
-        var scc = scc(mat);
-        scc.forEach(System.out::println);
+        var mat = Graph.loadGraph("data/5vertices_shortest.mat", "list");
+        System.out.println(mat.toGraphviz());
+
+        System.out.println("Bellman");
+        var shortestB = bellmanFord(mat, 0);
+        System.out.println(shortestB);
+        shortestB.printShortestPath(2);
+
+        System.out.println("Dijkstra");
+        var shortestD = dijkstra(mat, 0);
+        System.out.println(shortestD);
+        shortestD.printShortestPath(2);
+
+        System.out.println("----------");
+        for (int i = 0 ; i < mat.numberOfVertices() ; ++i) {
+            System.out.println(dijkstra(mat, i));
+            System.out.println(bellmanFord(mat, i));
+        }
+        System.out.println("FloydWarshall");
+        var shortestF = floydWarshall(mat);
+        System.out.println(shortestF);
+//        shortestF.printShortestPath(0,2);
+
+//        var timings = timedDepthFirstSearch(mat, 0);
+//        var topoSort = topologicalSort(mat, true);
+//        System.out.println(topoSort);
+//        for (var a : timings) {
+//            System.out.println(Arrays.toString(a));
+//        }
+
+
+
+//        var mat = Graph.loadGraph("src/matrix.mat", "list");
+//        var scc = scc(mat);
+//        scc.forEach(System.out::println);
 
 
 
