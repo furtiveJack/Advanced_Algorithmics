@@ -2,6 +2,7 @@ package fr.umlv.info2.graphs;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedList;
 
 public class ShortestPathFromOneVertex {
     private final int source;
@@ -17,5 +18,17 @@ public class ShortestPathFromOneVertex {
     @Override
     public String toString() {
         return source + " " + Arrays.toString(d) + " " + Arrays.toString(pi);
+    }
+
+    public void printShortestPath(int dest) {
+        int current = pi[dest];
+        LinkedList<Integer> res = new LinkedList<>();
+        res.push(dest);
+        while (current != source) {
+            res.push(current);
+            current = pi[current];
+        }
+        res.push(current);
+        System.out.println(res);
     }
 }
