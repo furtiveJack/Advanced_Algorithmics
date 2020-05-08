@@ -20,7 +20,7 @@ public class MatGraph implements  Graph {
 
     private void checkIndex(int index) {
         if (index < 0 || index >= n) {
-            throw new IndexOutOfBoundsException("Index must be >= 0 and <= " + n);
+            throw new IndexOutOfBoundsException("Index " + index + " must be >= 0 and <= " + n);
         }
     }
 
