@@ -1,9 +1,7 @@
 package fr.umlv.info2.graphs;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.atomic.LongAdder;
-import java.util.function.Consumer;
 
 public class Graphs {
     /**
@@ -96,6 +94,14 @@ public class Graphs {
         return res;
     }
 
+    /**
+     * Recursive method use to compute a timed DFS on the graph given.
+     * @param g         a valid graph
+     * @param v0        the starting vertex
+     * @param start     an int array storing the beginning dates of each vertex
+     * @param end       an int array storing the ending dates of each vertex
+     * @param count     current time-step
+     */
     private static void timedDFS_rec(Graph g, int v0, int[] start, int[] end, LongAdder count) {
         start[v0] = count.intValue();
         count.increment();
@@ -109,6 +115,12 @@ public class Graphs {
         count.increment();
     }
 
+    /**
+     * Compute a timed DFS on the graph given, starting from vertex v0.
+     * @param g     a valid graph.
+     * @param v0    the starting vertex
+     * @return      a n*2 int array containing the time-step of the start and end of traversals for each vertex.
+     */
     public static int[][] timedDepthFirstSearch(Graph g, int v0) {
         int n = g.numberOfVertices();
         if (v0 > n || v0 < 0) {
@@ -139,8 +151,19 @@ public class Graphs {
         return timings;
     }
 
+    /**
+     * Recursive method used to compute the topological sort of the given graph.
+     * @param g             a valid graph
+     * @param v0            vertex on which we start computation
+     * @param visited       a boolean array representing which vertices have already been visited
+     * @param list          a list under construction, representing the topological sort
+     * @param cycleDetect   a boolean that, if set to true, will make the method throw an exception if a cycle is
+     *                      detected in the graph.
+     * @param finished      a boolean array representing for which vertex we have finished the computation
+     * @throws IllegalStateException if a cycle is detected and cycleDetect is set to true
+     */
     private static void topologicalSort_rec(Graph g, int v0, boolean[] visited, LinkedList<Integer> list,
-                                            boolean cycleDetect, boolean[] finished) {
+                                            boolean cycleDetect, boolean[] finished) throws IllegalStateException {
         visited[v0] = true;
         g.forEachEdge(v0, e -> {
             var t = e.getEnd();
@@ -163,11 +186,12 @@ public class Graphs {
 
     /**
      * Compute a topological sort for the graph given.
-     * @param g : a valid graph
-     * @param cycleDetect : if set to True, cycles will be treat as errors, otherwise they will be ignore.
-     * @return a list representing the topological sort of this graph
+     * @param   g a valid graph
+     * @param   cycleDetect if set to True, cycles will be treat as errors, otherwise they will be ignore.
+     * @return  a list representing the topological sort of this graph
+     * @throws IllegalStateException if a cycle is detected and cycleDetect is set to true
      */
-    public static List<Integer> topologicalSort(Graph g, boolean cycleDetect) {
+    public static List<Integer> topologicalSort(Graph g, boolean cycleDetect) throws IllegalStateException {
         int n = g.numberOfVertices();
         var visited = new boolean[n];
         var finished = new boolean[n];
@@ -186,7 +210,7 @@ public class Graphs {
      * we push the vertices into a stack by decreasing end date order.
      * This method is called for each vertex of the graph in order to compute the final stack.
      * @param g : a valid graph
-     * @param v0 : current index
+     * @param v0 : current vertex index
      * @param visited : an array to know which vertex has already been visited
      * @param stack : the stack that will store the vertices by decreasing end time order
      */
@@ -344,13 +368,11 @@ public class Graphs {
         return new ShortestPathFromOneVertex(v0, d, p);
     }
 
-    private static void print2dArrays(int[][] d, int[][] p) {
-        StringBuffer bf = new StringBuffer();
-        for (int i = 0; i < d.length; i++) {
-            bf.append(Arrays.toString(d[i])).append("\t\t\t\t").append(Arrays.toString(p[i])).append("\n");
-        }
-        System.out.println(bf.toString());
-    }
+    /**
+     * Compute the shortest path for all the vertices to all the vertices using the Floyd-Warshall algorithm.
+     * @param g a valid graph
+     * @return a ShortestPathFromAllVertices objcet storing and array of distances and an array of predecessors.
+     */
     public static ShortestPathFromAllVertices floydWarshall(Graph g) {
         Objects.requireNonNull(g);
         int V = g.numberOfVertices();
@@ -375,11 +397,7 @@ public class Graphs {
                 }
             }
         }
-//        print2dArrays(d, p);
-        // Main loop
         for (int k = 0 ; k < V ; ++k) {
-//            System.out.println(" k:" + k);
-//            print2dArrays(d, p);
             for (int s = 0 ; s < V ; ++s) {
                 for (int t = 0 ; t < V ; ++t) {
                     if (s != k && t != k && d[s][k] != Integer.MAX_VALUE && d[k][t] != Integer.MAX_VALUE) {
@@ -395,28 +413,32 @@ public class Graphs {
     }
 
 
-    public static void main(String[] args) throws IOException {
-        var mat = Graph.loadGraph("data/5vertices_shortest.mat", "list");
-        System.out.println(mat.toGraphviz());
-
-        System.out.println("Bellman");
-        var shortestB = bellmanFord(mat, 0);
-        System.out.println(shortestB);
-        shortestB.printShortestPath(2);
-
-        System.out.println("Dijkstra");
-        var shortestD = dijkstra(mat, 0);
-        System.out.println(shortestD);
-        shortestD.printShortestPath(2);
-
-        System.out.println("----------");
-        for (int i = 0 ; i < mat.numberOfVertices() ; ++i) {
-            System.out.println(dijkstra(mat, i));
-            System.out.println(bellmanFord(mat, i));
-        }
-        System.out.println("FloydWarshall");
-        var shortestF = floydWarshall(mat);
-        System.out.println(shortestF);
+//    public static void main(String[] args) throws IOException {
+//        var mat = Graph.loadGraph("data/8vertices_shortest.mat", "list");
+//        System.out.println(mat.toGraphviz());
+//
+//        var shortest = floydWarshall(mat);
+//        System.out.println(shortest);
+//        System.out.println("SHORTEST");
+//        shortest.printShortestPath(4, 7);
+//        System.out.println("Bellman");
+//        var shortestB = bellmanFord(mat, 0);
+//        System.out.println(shortestB);
+//        shortestB.printShortestPath(2);
+//
+//        System.out.println("Dijkstra");
+//        var shortestD = dijkstra(mat, 0);
+//        System.out.println(shortestD);
+//        shortestD.printShortestPath(2);
+//
+//        System.out.println("----------");
+//        for (int i = 0 ; i < mat.numberOfVertices() ; ++i) {
+//            System.out.println(dijkstra(mat, i));
+//            System.out.println(bellmanFord(mat, i));
+//        }
+//        System.out.println("FloydWarshall");
+//        var shortestF = floydWarshall(mat);
+//        System.out.println(shortestF);
 //        shortestF.printShortestPath(0,2);
 
 //        var timings = timedDepthFirstSearch(mat, 0);
@@ -449,5 +471,5 @@ public class Graphs {
 //        var g = Graph.createRandomGraph(5, 7);
 //        System.out.println(g.toGraphviz());
 //        Graph.getImageView(g, "graph.dot");
-    }
+//    }
 }

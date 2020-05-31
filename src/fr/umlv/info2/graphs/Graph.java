@@ -123,6 +123,12 @@ public interface Graph {
         }
     }
 
+    /**
+     * Create a random graph the given number of vertices and edges
+     * @param n         number of vertices
+     * @param nbEdges   number of edges
+     * @return          the random graph created
+     */
     static Graph createRandomGraph(int n, int nbEdges) {
         if (nbEdges > n * n) {
             throw new IllegalArgumentException("Number of edges should be less than n*n");
@@ -143,12 +149,16 @@ public interface Graph {
             do {
                 weight = weightGenerator.getAsInt();
             } while (weight == 0);
-            System.out.println("Adding edge : " + i + " -> " + j + " : " + weight);
+//            System.out.println("Adding edge : " + i + " -> " + j + " : " + weight);
             g.addEdge(i, j, weight);
         }
         return g;
     }
 
+    /**
+     * Compute the transposed graph of the current graph
+     * @return the transposed graph
+     */
     default Graph transpose() {
         var g = new MatGraph(numberOfVertices());
         for (int i = 0 ; i < numberOfVertices() ; ++i) {

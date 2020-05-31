@@ -20,7 +20,7 @@ public class ShortestPathFromOneVertex {
         return source + " " + Arrays.toString(d) + " " + Arrays.toString(pi);
     }
 
-    public void printShortestPath(int dest) {
+    public LinkedList<Integer> printShortestPath(int dest) {
         int current = pi[dest];
         LinkedList<Integer> res = new LinkedList<>();
         res.push(dest);
@@ -30,5 +30,14 @@ public class ShortestPathFromOneVertex {
         }
         res.push(current);
         System.out.println(res);
+        return res;
+    }
+
+    public int[] getD() {
+        return d;
+    }
+
+    public int[] getPi() {
+        return pi;
     }
 }
